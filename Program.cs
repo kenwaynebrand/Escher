@@ -1,4 +1,4 @@
-﻿using Escher_Test.Classes;
+using Escher_Test.Classes;
 using Escher_Test.Enumerations;
 using Escher_Test.Interfaces;
 using Escher_Test.Models;
@@ -11,7 +11,7 @@ using System.Text.Json;
 
 namespace Escher_Test
 {
-    internal class Program
+    public class Program
     {
         static void Main(string[] args)
         {
@@ -28,8 +28,8 @@ namespace Escher_Test
                         Console.WriteLine("Please enter spouse information:");
                         var linkedPerson = InputData();
                         PeopleLink foo = new();
-                        person.LinkedPersons.Add(new PeopleLink { IsMain = false, PersonID = linkedPerson.Id });
-                        linkedPerson.LinkedPersons.Add(new PeopleLink { IsMain = true, PersonID = person.Id });
+                        person.LinkedPersons?.Add(new PeopleLink { IsMain = false, PersonID = linkedPerson.Id });
+                        linkedPerson.LinkedPersons?.Add(new PeopleLink { IsMain = true, PersonID = person.Id });
                         SaveLinkedPerson(linkedPerson, MainFileName);
                     }
                     SavePerson(person, MainFileName);
@@ -40,11 +40,11 @@ namespace Escher_Test
                 }
 
                 Console.WriteLine("Continue to register persons? (Y,N)");
-            } while (Console.ReadLine().ToUpper() == "Y");
+            } while (Console.ReadLine() != null);
         }
 
 
-        private static string SerializePerson(IPerson person)
+        public static string SerializePerson(IPerson person)
         {
             var consent = person.GetType().Name == "PersonAdult" ? "null" : "true";
             string p = person.FirstName + "|" +
@@ -55,7 +55,7 @@ namespace Escher_Test
                 consent;
 
 
-            if (person.LinkedPersons.Count > 0)
+            if (person.LinkedPersons != null && person.LinkedPersons.Count > 0)
             {
                 {
                     foreach (var lp in person.LinkedPersons)
@@ -69,30 +69,26 @@ namespace Escher_Test
         }
 
 
-        private static void SavePerson(IPerson person, string mainFileName)
+        static void SavePerson(IPerson person, string mainFileName)
         {
-            using (var fs = File.AppendText(mainFileName))
-            {
-                fs.WriteLine(SerializePerson(person));
-            }
+            using var fs = File.AppendText(mainFileName);
+            fs.WriteLine(SerializePerson(person));
         }
 
-        private static void SaveLinkedPerson(IPerson linkedPerson, string mainFileName)
+        static void SaveLinkedPerson(IPerson linkedPerson, string mainFileName)
         {
             var LinkedPersonFileName = Path.GetDirectoryName(mainFileName);
-            using (var fs = File.Create(LinkedPersonFileName + "\\" + linkedPerson.Id + ".txt"))
-            {
-                byte[] info = new UTF8Encoding(true).GetBytes(SerializePerson(linkedPerson));
-                fs.Write(info, 0, info.Length);
-            }
+            using var fs = File.Create(LinkedPersonFileName + "\\" + linkedPerson.Id + ".txt");
+            byte[] info = new UTF8Encoding(true).GetBytes(SerializePerson(linkedPerson));
+            fs.Write(info, 0, info.Length);
         }
 
         static IPerson InputData()
         {
-            string? Firstname = Get<string>("First Name: ");
-            string? Surname = Get<string>("Last Name: ");
-            DateOnly DOB = Get<DateOnly>("Date of Birth: ");
-            MaritalStatus Married = Get<MaritalStatus>("Marital Status (Maried, Single, Declined): ");
+            string? Firstname = Get<string>(Prompt("First Name: "));
+            string? Surname = Get<string>(Prompt("Last Name: "));
+            DateOnly DOB = Get<DateOnly>(Prompt("Date of Birth: "));
+            MaritalStatus Married = Get<MaritalStatus>(Prompt("Marital Status (Maried, Single, Declined): "));
 
             // Implement Business Rules
             var age = Math.Truncate((DateTime.Now - DOB.ToDateTime(new TimeOnly())).Days/365.24);
@@ -102,7 +98,7 @@ namespace Escher_Test
             }
             else if(age < 18)
             {
-                if ( Get<bool>("Parental Consent (Yes,No): "))
+                if ( Get<bool>(Prompt("Parental Consent (Yes,No): ")))
                 {
                     return new PersonChild { DateOfBirth = DOB, FirstName= Firstname, MaritalStatus = Married, Surname = Surname, GuardianConsent = true };
                 }
@@ -118,10 +114,14 @@ namespace Escher_Test
             }
         }
 
-        static T? Get<T>(string prompt)
+        static string? Prompt(string prompt)
         {
             Console.WriteLine(prompt);
-            object? input = Console.ReadLine();
+            return Console.ReadLine();
+        }
+
+        public static T? Get<T>(string? input)
+        {
             object ret;
 
             if (input != null)
@@ -135,11 +135,12 @@ namespace Escher_Test
                 {
                     if (Enum.TryParse<MaritalStatus>((string)input, true, out MaritalStatus res))
                     {
-                        //var foo = (object)res;
-                        //ret = (T)foo;
                         ret = (T)(object)res;
                     }
-                    else { ret = (T)default; }
+                    else 
+                    { 
+                        ret = (T)(object)MaritalStatus.Declined; 
+                    }
 
                 }
                 else if (typeof(T) == typeof(bool))
@@ -149,7 +150,8 @@ namespace Escher_Test
                     {
                         if (input != null)
                         {
-                            ret = (input as string).ToUpper() switch
+
+                            ret = ((string)input).ToUpper() switch
                             {
                                 "YES" => (T)(object)true,
                                 "NO" => (T)(object)false,
@@ -168,45 +170,42 @@ namespace Escher_Test
                 }
                 else
                 {
-                    ret = (T)input;
+                    ret = (T)(object)input;
                 }
 
             }
-            else { ret = (T)default; }
+            else { ret = (T)(object)""; }
 
             return (T)ret;
         }
 
-        static string ValidateCreateMainDataFile(string defaultFileName, string commandlineName)
+        public static string ValidateCreateMainDataFile(string defaultFileName, string commandlineName)
         {
             string fileName;
-            if (commandlineName.IndexOfAny(Path.GetInvalidFileNameChars()) < 0) // test if supplied path/name is valid
+            var FN = Path.GetFileName(commandlineName);
+            if (!string.IsNullOrEmpty(commandlineName) && FN.IndexOfAny(Path.GetInvalidFileNameChars()) < 0) 
             {
-                try
+                if (!File.Exists(commandlineName))
                 {
-                    if (!File.Exists(commandlineName))
+                    var dir = Path.GetDirectoryName(commandlineName);
+                    if (dir != null)
                     {
-                        Directory.CreateDirectory(Path.GetDirectoryName(commandlineName));
-                        File.Create(commandlineName);
+                        Directory.CreateDirectory(dir);
+                        using var fs = File.Create(commandlineName);
                     }
-                    fileName = commandlineName;
                 }
-                catch
-                {
-                    if (!File.Exists(defaultFileName))
-                    {
-                        Directory.CreateDirectory(Path.GetDirectoryName(defaultFileName));
-                        File.Create(defaultFileName);
-                    }
-                    fileName = defaultFileName;
-                }
+                fileName = commandlineName;
             }
-            else // either the commandline doesn't exist or had issues being created. use the default
+            else
             {
                 if (!File.Exists(defaultFileName))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(defaultFileName));
-                    File.Create(defaultFileName);
+                    var dir = Path.GetDirectoryName(defaultFileName);
+                    if (dir != null)
+                    {
+                        Directory.CreateDirectory(dir);
+                        using var fs = File.Create(defaultFileName);
+                    }
                 }
                 fileName = defaultFileName;
             }
