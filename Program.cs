@@ -39,7 +39,7 @@ namespace Escher_Test
                 }
 
                 Console.WriteLine("Continue to register persons? (Y,N)");
-            } while (Console.ReadLine() == "Y" ? true : false);
+            } while (Console.ReadLine() == "Y");
         }
 
 
@@ -119,7 +119,7 @@ namespace Escher_Test
             return Console.ReadLine();
         }
 
-        static T? Get<T>(string? input)
+        public static T? Get<T>(string? input)
         {
             object ret;
 
@@ -178,7 +178,7 @@ namespace Escher_Test
             return (T)ret;
         }
 
-        static string ValidateCreateMainDataFile(string defaultFileName, string commandlineName)
+        public static string ValidateCreateMainDataFile(string defaultFileName, string commandlineName)
         {
             string fileName;
             var FN = Path.GetFileName(commandlineName);
