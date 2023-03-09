@@ -17,7 +17,6 @@ namespace Escher_Test
         {
             // Setup and create if needed the main data file
             string MainFileName = ValidateCreateMainDataFile("c:\\people\\mainfile.txt", args.Length > 0 ? args[0] : "");
-
             do
             {
                 try
@@ -40,7 +39,7 @@ namespace Escher_Test
                 }
 
                 Console.WriteLine("Continue to register persons? (Y,N)");
-            } while (Console.ReadLine() != null);
+            } while (Console.ReadLine() == "Y" ? true : false);
         }
 
 
@@ -120,7 +119,7 @@ namespace Escher_Test
             return Console.ReadLine();
         }
 
-        public static T? Get<T>(string? input)
+        static T? Get<T>(string? input)
         {
             object ret;
 
@@ -179,7 +178,7 @@ namespace Escher_Test
             return (T)ret;
         }
 
-        public static string ValidateCreateMainDataFile(string defaultFileName, string commandlineName)
+        static string ValidateCreateMainDataFile(string defaultFileName, string commandlineName)
         {
             string fileName;
             var FN = Path.GetFileName(commandlineName);
