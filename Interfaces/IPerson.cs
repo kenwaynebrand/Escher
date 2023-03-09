@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +8,7 @@ using Escher_Test.Enumerations;
 
 namespace Escher_Test.Interfaces
 {
-    internal interface IPerson
+    public interface IPerson
     {
         Guid Id { get; }
         string? FirstName { get; set; }
